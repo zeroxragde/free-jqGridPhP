@@ -15,9 +15,11 @@ class jqGridPersistente{
 	private $jsAdd="";
 	private $colsAdd=array();
 	private $FormatosPredifinidos=array("integer","number","currency","date","email","link","showlink","checkbox","select","actions");
+	private $navBtnCustomDefault=array("storeClear","cols","refresh");
 	private $subGrid=array();
 	private $mkey="";
 	private $navOptions=array();
+	private $buscarAlDarEnter='false';
 	
     function __construct() {
         $a = func_get_args();
@@ -56,6 +58,11 @@ class jqGridPersistente{
 	
 	private function showError(){
 		echo $this->error;
+	}
+	
+	
+	public function setSearchOnEnter($t){
+		$this->buscarAlDarEnter="'".$t."'";
 	}
 	public function setJS($j){
 		$this->jsAdd=$j;
@@ -596,26 +603,43 @@ if(!empty($this->subGrid['Cols'])){
 					 
 					 $('#' + subgridDivId).css({margin: 0,
 					                            'margin-top': '-25px',
-												'margin-bottom': '-25px'}).load('$url',{rowid: rowId,grid:'$mygridName',pager:'$pagerName' $colsSubGrid});
+												'margin-bottom': '-25px'}).load('$url',{contenedor:subgridDivId,rowid: rowId,grid:'$mygridName',pager:'$pagerName' $colsSubGrid});
 				 }";
 	
 }
 
 $arrNav=array();
-// $jsonNavOpt['edit']=false;
-// $jsonNavOpt['add']=false;
-// $jsonNavOpt['del']=false;
-$jsonNavOpt="";
+$jsonNavOpt['edit']=false;
+$jsonNavOpt['add']=false;
+$jsonNavOpt['del']=false;
+$jsonNavOpt['refresh']=false;
+$jsonNavOpt['search']=false;
+$jsonBtnCustomDefault=array();
+
 if(!empty($this->navOptions)){
 	//{edit: false, add: false, del: false}
-	$jsonNavOpt= json_encode($this->navOptions['navigator']);
-	echo $jsonNavOpt;
-}else{
+	$navOpDefault=array_keys($jsonNavOpt);
 
-	$jsonNavOpt=json_encode($jsonNavOpt);
+	foreach($this->navOptions['navigator'] as $op=>$prop){
+		if(in_array($op,$navOpDefault)){
+			if($op!="refresh"){
+				$jsonNavOpt[$op]=$prop;
+			}
+		}else{
+			if(in_array($op,$this->navBtnCustomDefault)){
+				$jsonBtnCustomDefault[$op]=$prop;
+			}
+		}
+	}
+	
+	
 }
+    $jsonBtnCustomDefault=json_encode($jsonBtnCustomDefault);
+	$jsonNavOpt=json_encode($jsonNavOpt);
 
+echo $jsonNavOpt;
 $myurl=basename($_SERVER['PHP_SELF']);
+$buscarAlEnter=$this->buscarAlDarEnter;
 
 $initjs=<<<INITJS
 <script>
@@ -650,7 +674,7 @@ $(document).ready(function(){
 	
 	var constantes={
 		        datatype: "local",
-				loadonce: false,
+				loadonce: true,
 		        colModel: cm,
 		        autoResizing: { compact: true },
                 onSelectRow: function (id, isSelected) {
@@ -719,7 +743,7 @@ $(document).ready(function(){
                         if (typeof (this.ftoolbar) !== "boolean" || !this.ftoolbar) {
                             // create toolbar if needed
                             thisgrid.jqGrid("filterToolbar",
-                                {stringResult: true, searchOnEnter: true, defaultSearch: myDefaultSearch});
+                                {stringResult: true, searchOnEnter: $buscarAlEnter, defaultSearch: myDefaultSearch});
                         }
                     }
                     refreshSerchingToolbar(thisgrid, myDefaultSearch);
@@ -740,7 +764,6 @@ $(document).ready(function(){
 	
 	
 
-
 	
 			
 			$.extend($.jgrid.search, {
@@ -748,52 +771,80 @@ $(document).ready(function(){
                 multipleGroup: true,
                 recreateFilter: true,
                 closeOnEscape: true,
-                closeAfterSearch: true,
-                //overlay: 0
+                closeAfterSearch: true
             });
+
 			
             mygrid.jqGrid("navGrid", '#$pagerName',$jsonNavOpt);
 			
-            mygrid.jqGrid("navButtonAdd", {
-                caption: "",
-                buttonicon: "fa-table",
-                title: "Choose columns",
-                onClickButton: function () {
-                    $(this).jqGrid("columnChooser", {
-                        done: function (perm) {
-                            if (perm) {
-                                this.jqGrid("remapColumns", perm, true);
-                                saveColumnState.call(this);
-                            }
-                        }
-                    });
-                }
-            });
 			
-            mygrid.jqGrid("navButtonAdd", {
-                caption: "",
-                buttonicon: "fa-times",
-                title: "Clear saved grid's settings",
-                onClickButton: function () {
-                    removeObjectFromLocalStorage(myColumnStateName($(this)));
-                    window.location.reload();
-                }
-            });
+			var newBtns=$jsonBtnCustomDefault;
 			
-			mygrid.bind("reloadGrid", function (e, rowid, orgClickEvent){
-			       // mygrid.jqGrid('GridUnload');
-					//mygrid.jqGrid(opciones);
+			$.each(newBtns,function(i,v){
+				
+				if(v==true){
+					switch(i){
+						case "storeClear": 
+							mygrid.jqGrid("navButtonAdd", {
+								caption: "",
+								buttonicon: "fa-times",
+								title: "Limpia las configuracion guardadas",
+								onClickButton: function () {
+									removeObjectFromLocalStorage(myColumnStateName($(this)));
+									window.location.reload();
+								}
+							});
+						break;
+						case "cols": 
+								mygrid.jqGrid("navButtonAdd", {
+									caption: "",
+									buttonicon: "fa-table",
+									title: "Selecciona las columnas a ver",
+									onClickButton: function () {
+										$(this).jqGrid("columnChooser", {
+											done: function (perm) {
+												if (perm) {
+													this.jqGrid("remapColumns", perm, true);
+													saveColumnState.call(this);
+												}
+											}
+										});
+									}
+								});
+						break;
+						case "search": break;
+						case "refresh":
+			
+							mygrid.jqGrid("navButtonAdd", {
+								caption: "",
+								buttonicon: "fa-refresh",
+								title: "Reload",
+								onClickButton: function () {
+								   $("#$divContenedora").load("$myurl");
+								}
+							});
+							
+						break;
+					}
+				}
+				
+			})
+			
+			
+
+		var nameGRid="$mygridName";
+			$(document).on("click",'.fm-button',function(){
+				 // '#fbox_'+nameGRid+'_search'
+				   alert("hola");
 			});
 			
+
 			
-            mygrid.jqGrid("navButtonAdd", {
-                caption: "",
-                buttonicon: "fa-refresh",
-                title: "Reload",
-                onClickButton: function () {
-                   $("#$divContenedora").load("$myurl");
-                }
-            });
+			mygrid.bind("jqGridToolbarBeforeSearch", function (e, rowid, orgClickEvent){
+			      $("#$divContenedora").load("$myurl");
+			});
+			
+
 			
 			
 //Funciones de Usuario 			  
