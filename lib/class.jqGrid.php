@@ -20,6 +20,7 @@ class jqGridPersistente{
 	private $mkey="";
 	private $navOptions=array();
 	private $buscarAlDarEnter='false';
+	private $noPager=false;
 	
     function __construct() {
         $a = func_get_args();
@@ -128,6 +129,9 @@ class jqGridPersistente{
 	}
 	public function setNavOptions($action,$prop){
 		$this->navOptions[$action]=$prop;
+	}
+	public function notPager($e){
+		$this->noPager=$e;
 	}
 
 	
@@ -592,7 +596,7 @@ if(!empty($this->subGrid['Cols'])){
   foreach($this->subGrid['Cols'] as $col){
 	  if($colsSubGrid==""){
 		  $colsSubGrid="$col : mygrid.jqGrid ('getCell', rowId, '$col')";
-	  }else{
+	  }else{ 
 		   $colsSubGrid=", $col : mygrid.jqGrid ('getCell', rowId, '$col')";
 	  }
   }
@@ -614,8 +618,8 @@ $jsonNavOpt['add']=false;
 $jsonNavOpt['del']=false;
 $jsonNavOpt['refresh']=false;
 $jsonNavOpt['search']=false;
-$jsonBtnCustomDefault=array();
-
+$jsonBtnCustomDefaultT=array();
+$optForms="";
 if(!empty($this->navOptions)){
 	//{edit: false, add: false, del: false}
 	$navOpDefault=array_keys($jsonNavOpt);
@@ -624,23 +628,37 @@ if(!empty($this->navOptions)){
 		if(in_array($op,$navOpDefault)){
 			if($op!="refresh"){
 				$jsonNavOpt[$op]=$prop;
+				if(isset($this->navOptions[$op])){
+					$optForms[]=$this->navOptions[$op];
+				}
+				
+			}else{
+			   
+					$jsonBtnCustomDefaultT[$op]=$prop;
+				
 			}
 		}else{
 			if(in_array($op,$this->navBtnCustomDefault)){
-				$jsonBtnCustomDefault[$op]=$prop;
+				$jsonBtnCustomDefaultT[$op]=$prop;
 			}
 		}
 	}
 	
 	
 }
-    $jsonBtnCustomDefault=json_encode($jsonBtnCustomDefault);
+
+    $jsonBtnCustomDefault=json_encode($jsonBtnCustomDefaultT);
 	$jsonNavOpt=json_encode($jsonNavOpt);
 
-echo $jsonNavOpt;
+
 $myurl=basename($_SERVER['PHP_SELF']);
 $buscarAlEnter=$this->buscarAlDarEnter;
-
+if(!$this->noPager){
+	$setPager="'#$pagerName'";
+}else{
+	$setPager='false';
+}
+print_r(json_encode($optForms));
 $initjs=<<<INITJS
 <script>
 $(document).ready(function(){
@@ -659,7 +677,7 @@ $(document).ready(function(){
                 iconSet: "fontAwesome",
                 shrinkToFit: false,               
                 rowList: [5, 10, 20],
-                pager: '#$pagerName',
+                pager: $setPager,
                 gridview:true,
                 caption: " ",
                 height: "auto",	
@@ -777,7 +795,7 @@ $(document).ready(function(){
 			
             mygrid.jqGrid("navGrid", '#$pagerName',$jsonNavOpt);
 			
-			
+			 
 			var newBtns=$jsonBtnCustomDefault;
 			
 			$.each(newBtns,function(i,v){
@@ -830,20 +848,18 @@ $(document).ready(function(){
 				
 			})
 			
+		
 			
 
-		var nameGRid="$mygridName";
-			$(document).on("click",'.fm-button',function(){
-				 // '#fbox_'+nameGRid+'_search'
-				   alert("hola");
-			});
-			
-
-			
+			//Controlador de buscadores
 			mygrid.bind("jqGridToolbarBeforeSearch", function (e, rowid, orgClickEvent){
 			      $("#$divContenedora").load("$myurl");
 			});
 			
+			mygrid.bind("jqGridFilterSearch", function (e, rowid, orgClickEvent){
+			      $("#$divContenedora").load("$myurl");
+			});
+			//Eventos de Usuario
 
 			
 			
