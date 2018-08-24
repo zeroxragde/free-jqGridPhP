@@ -612,6 +612,17 @@ if(!empty($this->subGrid['Cols'])){
 	
 }
 
+$myurl=basename($_SERVER['PHP_SELF']);
+$buscarAlEnter=$this->buscarAlDarEnter;
+if(!$this->noPager){
+	$setPager="'#$pagerName'";
+}else{
+	$setPager='false';
+}
+
+
+
+
 $arrNav=array();
 $jsonNavOpt['edit']=false;
 $jsonNavOpt['add']=false;
@@ -623,13 +634,17 @@ $optForms="";
 if(!empty($this->navOptions)){
 	//{edit: false, add: false, del: false}
 	$navOpDefault=array_keys($jsonNavOpt);
-
+    $x=0;
 	foreach($this->navOptions['navigator'] as $op=>$prop){
 		if(in_array($op,$navOpDefault)){
 			if($op!="refresh"){
+				
 				$jsonNavOpt[$op]=$prop;
+				
 				if(isset($this->navOptions[$op])){
-					$optForms[]=$this->navOptions[$op];
+					$optForms[$x]=$this->navOptions[$op];
+				}else{
+					$optForms[$x]="{}";
 				}
 				
 			}else{
@@ -642,6 +657,7 @@ if(!empty($this->navOptions)){
 				$jsonBtnCustomDefaultT[$op]=$prop;
 			}
 		}
+		$x++;
 	}
 	
 	
@@ -651,14 +667,46 @@ if(!empty($this->navOptions)){
 	$jsonNavOpt=json_encode($jsonNavOpt);
 
 
-$myurl=basename($_SERVER['PHP_SELF']);
-$buscarAlEnter=$this->buscarAlDarEnter;
-if(!$this->noPager){
-	$setPager="'#$pagerName'";
-}else{
-	$setPager='false';
+$jsonOptForms="";
+
+if(!empty($optForms)){
+$jsonOptForms="[";
+$jsonPropEnd="";
+foreach($optForms as $data){
+	$tmp="";
+
+	if($data != "{}"){
+		$tmp.="{";
+		 foreach($data as $campo=>$valor){
+			 if(is_bool($valor)){
+			 if($valor==false){
+				 $valor='false';
+			 }else{
+				 $valor='true';
+			 }
+			 }
+			if($tmp=="{"){
+				$tmp.="$campo : $valor";
+			}else{
+				$tmp.=",\r\n $campo : $valor";
+			}
+		  }
+		$tmp.="},";
+	}else{
+	  $tmp="{},";	
+	}
+    $jsonPropEnd.=$tmp;
 }
-print_r(json_encode($optForms));
+
+$jsonPropEnd=substr($jsonPropEnd,0,-1);
+$jsonOptForms.=$jsonPropEnd;
+$jsonOptForms.="]";
+
+}
+//$jsonOptForms=json_encode($optForms
+print_r($optForms);
+//print_r($jsonOptForms);
+// print_r($jsonNavOpt);
 $initjs=<<<INITJS
 <script>
 $(document).ready(function(){
@@ -793,7 +841,7 @@ $(document).ready(function(){
             });
 
 			
-            mygrid.jqGrid("navGrid", '#$pagerName',$jsonNavOpt);
+            mygrid.jqGrid("navGrid", '#$pagerName',$jsonNavOpt,$jsonOptForms);
 			
 			 
 			var newBtns=$jsonBtnCustomDefault;
