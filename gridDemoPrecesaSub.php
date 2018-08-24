@@ -11,6 +11,7 @@ $eControl->query("SET NAMES utf8");
 if (isset($_POST["rowid"])) $rowid=$_POST["rowid"]; else $rowid=""; 
 if (isset($_POST["pager"])) $pager=$_POST["pager"]; else $pager=""; 
 if (isset($_POST["grid"])) $mygrid=$_POST["grid"]; else $mygrid=""; 
+if (isset($_POST["contenedor"])) $contenedor=$_POST["contenedor"]; else $contenedor=""; 
 
 if($rowid==""){
 	echo "Error";
@@ -25,7 +26,7 @@ FROM personas WHERE id=$rowid";
 $subgrid->setData($sql);
 
 $subgrid->setPrimaryKey("id");
-$subgrid->setGridOptions(array('caption'=>"Detalle",
+$subgrid->setGridOptions(array('caption'=>"",
                             'rowNum'=>7,
 							'width'=>550,
 							'autowidth'=>false,
@@ -39,13 +40,13 @@ $subgrid->setColProperty('imagenurl', array("label"=>"Imagen", "hidden"=>false,"
 $subgrid->setColProperty('tipo', array("label"=>"Tipo", "hidden"=>false,"align"=>'center',"editable"=>true,"width"=>480));
 $subgrid->setColProperty('urlgo', array("label"=>"URL", "hidden"=>false,"align"=>'center',"editable"=>true,"width"=>480));
 
-
+$subgrid->notPager(true);
 
 
 
 $id=$mygrid."_t";
 $mypager=$pager."_t";
 
-$subgrid->renderGrid($id,$mypager);
+$subgrid->renderGrid($id,$mypager,$contenedor);
 
 ?>

@@ -630,21 +630,24 @@ $jsonNavOpt['del']=false;
 $jsonNavOpt['refresh']=false;
 $jsonNavOpt['search']=false;
 $jsonBtnCustomDefaultT=array();
-$optForms="";
+$optForms=array();
 if(!empty($this->navOptions)){
 	//{edit: false, add: false, del: false}
 	$navOpDefault=array_keys($jsonNavOpt);
-    $x=0;
+
 	foreach($this->navOptions['navigator'] as $op=>$prop){
 		if(in_array($op,$navOpDefault)){
 			if($op!="refresh"){
 				
 				$jsonNavOpt[$op]=$prop;
+				$myKey=array_search($op,$navOpDefault);
+				
 				
 				if(isset($this->navOptions[$op])){
-					$optForms[$x]=$this->navOptions[$op];
+					$optForms[$myKey]=$this->navOptions[$op];
+					
 				}else{
-					$optForms[$x]="{}";
+					$optForms[$myKey]="{}";
 				}
 				
 			}else{
@@ -657,7 +660,7 @@ if(!empty($this->navOptions)){
 				$jsonBtnCustomDefaultT[$op]=$prop;
 			}
 		}
-		$x++;
+		
 	}
 	
 	
@@ -669,8 +672,9 @@ if(!empty($this->navOptions)){
 
 $jsonOptForms="";
 
-if(!empty($optForms)){
-$jsonOptForms="[";
+ksort($optForms);
+
+$jsonOptForms="";
 $jsonPropEnd="";
 foreach($optForms as $data){
 	$tmp="";
@@ -700,11 +704,11 @@ foreach($optForms as $data){
 
 $jsonPropEnd=substr($jsonPropEnd,0,-1);
 $jsonOptForms.=$jsonPropEnd;
-$jsonOptForms.="]";
+$jsonOptForms.="";
 
-}
+
 //$jsonOptForms=json_encode($optForms
-print_r($optForms);
+
 //print_r($jsonOptForms);
 // print_r($jsonNavOpt);
 $initjs=<<<INITJS

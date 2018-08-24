@@ -74,7 +74,7 @@ $grid->setJS($js);
 $grid->setSubGrid("gridDemoPrecesaSub.php",array('Nombre'));
 
 
-$grid->setNavOptions('navigator', array("columns"=>true,
+$grid->setNavOptions('navigator', array("cols"=>true,
                                          "excel"=>true,
 										 "add"=>true,
 										 "edit"=>true,
@@ -82,6 +82,11 @@ $grid->setNavOptions('navigator', array("columns"=>true,
 										 "search"=>true,
 										 "refresh"=>false));
 
+
+$grid->setNavOptions('edit',array("dataheight"=>100,
+                                  "width"=>160,
+								  "drag"=>true,
+								  "beforeShowForm"=>"function(){ alert('hola'); }"));
 
 
 
