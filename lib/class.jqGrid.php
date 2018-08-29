@@ -1,5 +1,4 @@
 <?php
-
 class jqGridPersistente{
 	private $conn="";
 	private $query="";
@@ -21,18 +20,113 @@ class jqGridPersistente{
 	private $navOptions=array();
 	private $buscarAlDarEnter='false';
 	private $noPager=false;
+	private $arrNoValidas=array("onSelectAll","loadComplete","onSelectRow","sortable","autoResizing","datatype","colModel");
+    private $arrModificadores=array("rowNum","page",'search','postData','sortname','sortorder');
+	private $dbs="";
+	private $arrUserDBInfo=array();
 	
     function __construct() {
+		$a=array();
         $a = func_get_args();
         $i = func_num_args();
         if (method_exists($this,$f='__construct'.$i)) {
-            call_user_func_array(array($this,$f),$a);
+			if(sizeof($a)>1){
+				 call_user_func_array(array($this,$f),array($a));
+			}else{
+				 call_user_func_array(array($this,$f),$a);
+			}
+           
         }
    }
-	function __construct1($c){
+   
+   
+	private function __construct0(){
+		   
+	}
+	private function __construct1($c){
 		   $this->conn=$c;
 	}
 
+	private function __construct5($c){
+
+		$this->arrUserDBInfo=$c;
+		  $this->conn=new mysqli($c[0],$c[1],$c[2],$c[3],$c[4]);
+	}
+
+	
+	
+	
+ 
+ 
+	
+	private static function generarLlave($texto){
+		$abc=array('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z');
+		$ABC=array('A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z');
+		$simbolo=array('!','@','#','$','%','^','&','*','(',')','_','+','=','<','>','?','/');
+		$numero=array(1,2,3,4,5,6,7,8,9,0);
+		$abc=array_reverse($abc);
+
+		$llave=$texto;
+		$key="";
+		
+      for($k=0;$k<strlen($llave);$k++){
+		  
+              $keychar = substr($llave,$k,1);
+              $val=0;
+			  
+              for($x=0;$x<sizeof($abc);$x++){
+                 if($abc[$x]==$keychar){
+                    $val=$x;
+                 }
+       		    }
+				
+				
+				if($val==0){
+                  for($x=0;$x<sizeof($ABC);$x++){
+                     if($ABC[$x]==$keychar){
+                        $val=$x;
+                     }
+                   }
+                }
+                
+				if($val==0){
+                  for($x=0;$x<sizeof($simbolo);$x++){
+                     if($simbolo[$x]==$keychar){
+                        $val=$x;
+                     }
+                   }
+                }
+                
+			   if($val==0){
+                  for($x=0;$x<sizeof($numero);$x++){
+                     if($numero[$x]==$keychar){
+                        $val=$x;
+                     }
+                   }
+                }
+               $key=(int)$key+(int)$val;
+              
+      }
+	  
+	return $key;
+	}
+ 
+	private static function ByteToString($bytes){
+		
+		//$byte_array = call_user_func_array('pack', array_merge(array('C*'), $bytes )); PHP 6<
+		
+		$cadena_final="";
+		foreach($bytes as $byte){
+			$cadena_final.=pack('C*', $byte);
+		}
+
+		return $cadena_final;
+	}
+	
+	private static function StringToByte($string){
+	   return unpack('C*', $string);
+	}
+		
 	private function js_str($s){
 		return '"' . addcslashes($s, "\0..\37\"\\") . '"';
 	}
@@ -59,6 +153,106 @@ class jqGridPersistente{
 	
 	private function showError(){
 		echo $this->error;
+	}
+	
+	private function str_replace_first($search, $replace, $subject) {
+     $pos = strpos($subject, $search);
+		if ($pos !== false) {
+			return substr_replace($subject, $replace, $pos, strlen($search));
+		}
+      return $subject;
+    }
+	
+	
+		
+	 public function encrypt($cadena,$key){
+		
+
+		$llave=$this->generarLlave($key);
+
+
+
+
+		$arr_bytes=$this->StringToByte($cadena);
+
+
+		$sizeArr=sizeof($arr_bytes);
+
+		if($sizeArr>2){
+			
+		 $indexKey=round($sizeArr/2);
+
+		}else{
+			  $indexKey=1;
+		}
+
+
+		$lastIndex=$sizeArr;
+		$initIndex=1;
+
+
+		if($initIndex!=$indexKey){
+
+			$arr_bytes[$initIndex]=$arr_bytes[$initIndex]+$llave;
+			$arr_bytes[$lastIndex]=$arr_bytes[$lastIndex]+$llave;
+			$arr_bytes[$indexKey]=$arr_bytes[$indexKey]+$llave;
+
+		}else{
+
+			$arr_bytes[$initIndex]=$arr_bytes[$initIndex]+$llave;
+			$arr_bytes[$lastIndex]=$arr_bytes[$lastIndex]+$llave;
+			
+
+		}
+
+		return base64_encode($this->ByteToString($arr_bytes));	
+			
+		
+	}
+ 
+	 
+	public function decrypt($cadena,$key){
+			
+		$cadena=base64_decode($cadena);
+		$llave=$this->generarLlave($key);
+
+
+
+
+		$arr_bytes=$this->StringToByte($cadena);
+
+
+		$sizeArr=sizeof($arr_bytes);
+
+		if($sizeArr>2){
+			
+		 $indexKey=round($sizeArr/2);
+
+		}else{
+			  $indexKey=1;
+		}
+
+
+		$lastIndex=$sizeArr;
+		$initIndex=1;
+
+
+		if($initIndex!=$indexKey){
+
+			$arr_bytes[$initIndex]=$arr_bytes[$initIndex]-$llave;
+			$arr_bytes[$lastIndex]=$arr_bytes[$lastIndex]-$llave;
+			$arr_bytes[$indexKey]=$arr_bytes[$indexKey]-$llave;
+
+		}else{
+
+			$arr_bytes[$initIndex]=$arr_bytes[$initIndex]-$llave;
+			$arr_bytes[$lastIndex]=$arr_bytes[$lastIndex]-$llave;
+			
+
+		}
+
+		return $this->ByteToString($arr_bytes);	
+			
 	}
 	
 	
@@ -93,6 +287,9 @@ class jqGridPersistente{
 		$this->mkey=$colName;
 	}
 	public function setSelect($colName,$arrOrSql,$textAll){
+		if(!$this->conn){
+			$this->error='Se debe asignar una conexion en el contructor<br/>';	$this->showError();return false;
+		}
 		if(is_array($arrOrSql)){
 			$this->selectData[$colName]=$arrOrSql;
 			$this->selectData[$colName]["textAll"]=$textAll;
@@ -133,18 +330,32 @@ class jqGridPersistente{
 	public function notPager($e){
 		$this->noPager=$e;
 	}
+	public function setDBs($d){
+		$this->dbs=$d;
+	}
 
 	
 public function renderGrid($mygridName,$pagerName, $divContenedora){
 	
+if(!$this->conn){
+	$this->error='Se debe asignar una conexion en el contructor<br/>';	$this->showError();return false;
+}	
+if($this->mkey==""){
+	$this->error='Se debe asignar una llave primaria<br/>';	$this->showError();return false;
+}
+	
+if($this->dbs==""){
+	$this->error='Se debe especificar una o varias bases de datos a afectar $obj->setDBs("base1,base2...")<br/>';	$this->showError();return false;
+}
 $arrColNames=array();
 if(empty($this->conn)){
-	$this->error='Se debe especificar una consulta $obj->setData("consulta")';	$this->showError();return false;
+	$this->error='Se debe especificar una consulta $obj->setData("consulta")<br/>';	$this->showError();return false;
 }else{
 		$result=mysqli_query($this->conn,$this->query);
 		if($result){
 				$info_tabla=$result->fetch_fields();
 				$x=0;
+				//print_r($info_tabla);
                  foreach($info_tabla as $tabla){
 					 $arrColNames[$x]["Original"]=$tabla->orgname;
 					 $arrColNames[$x]["Asignado"]=$tabla->name;
@@ -153,7 +364,7 @@ if(empty($this->conn)){
 				 }
 					
 		}else{
-			$this->error='Error al intentar crear el ColModel: '.mysqli_error($this->conn);	$this->showError();return false;
+			$this->error='Error al intentar crear el ColModel: '.mysqli_error($this->conn)."<br/>";	$this->showError();return false;
 		}
 
 	
@@ -295,10 +506,22 @@ if(empty($this->conn)){
 
 $modelo=$this->colModel;
 $data=json_encode($arrData);
+
+
+//Asignar Cols Originales
+$arr_Original_Cols=array();
+foreach($arrColNames as $col){
+	$original=$col["Original"];
+	$colModel=$col["Asignado"];
+	$arr_Original_Cols[$colModel]=$original;
+}
+$jsonOriginalCols=json_encode($arr_Original_Cols);
+  // var myColsOriginal=$jsonOriginalCols;\r\n
 $jsGridData=<<<GRIDDATA
         var mygrid=$('#$mygridName');\r\n
 		var myColModel=$modelo;\r\n
 		var myData = $data;\r\n
+	
 GRIDDATA;
 
 
@@ -533,8 +756,7 @@ H;
 //}
 
 
-$arrNoValidas=array("onSelectAll","loadComplete","onSelectRow","sortable","autoResizing","datatype","colModel");
-$arrModificadores=array("rowNum","page",'search','postData','sortname','sortorder');
+
 
 
 
@@ -548,8 +770,8 @@ $sortorder="isColState ? myColumnsState.sortorder : ''";
 
 $userConfig=array();
  foreach($this->gridOptions as $opcion=>$valor){
-	 if(!in_array($opcion,$arrNoValidas)){
-		 if(in_array($opcion,$arrModificadores)){//Si es una opcion que se deba modificar
+	 if(!in_array($opcion,$this->arrNoValidas)){
+		 if(in_array($opcion,$this->arrModificadores)){//Si es una opcion que se deba modificar
 			 switch($opcion){
 				 case "rowNum":
 				   $rowNum="isColState ? myColumnsState.$opcion : ".$valor;
@@ -584,6 +806,8 @@ $EonSelectRow=$this->onSelectRow;
 $colsProp=json_encode($this->ColPropiedades);
 $jsAddGrid=$this->jsAdd;
 $selctores=json_encode($this->selectData);
+
+//Inicio del subgrid
 $subGridAdd="";
 
 if(!empty($this->subGrid)){
@@ -611,8 +835,11 @@ if(!empty($this->subGrid['Cols'])){
 				 }";
 	
 }
+//Fin de subgrid
 
+//Url de la pagina
 $myurl=basename($_SERVER['PHP_SELF']);
+//Cancelar el pager
 $buscarAlEnter=$this->buscarAlDarEnter;
 if(!$this->noPager){
 	$setPager="'#$pagerName'";
@@ -622,7 +849,7 @@ if(!$this->noPager){
 
 
 
-
+///Botones en el navegador
 $arrNav=array();
 $jsonNavOpt['edit']=false;
 $jsonNavOpt['add']=false;
@@ -631,9 +858,11 @@ $jsonNavOpt['refresh']=false;
 $jsonNavOpt['search']=false;
 $jsonBtnCustomDefaultT=array();
 $optForms=array();
-if(!empty($this->navOptions)){
+$navOpDefault=array_keys($jsonNavOpt);
+
+if(isset($this->navOptions['navigator'])){
 	//{edit: false, add: false, del: false}
-	$navOpDefault=array_keys($jsonNavOpt);
+
 
 	foreach($this->navOptions['navigator'] as $op=>$prop){
 		if(in_array($op,$navOpDefault)){
@@ -662,42 +891,131 @@ if(!empty($this->navOptions)){
 		}
 		
 	}
-	
-	
+		
 }
 
-    $jsonBtnCustomDefault=json_encode($jsonBtnCustomDefaultT);
-	$jsonNavOpt=json_encode($jsonNavOpt);
 
 
+$jsonBtnCustomDefault=json_encode($jsonBtnCustomDefaultT);
+$jsonNavOpt=json_encode($jsonNavOpt);
 $jsonOptForms="";
 
 ksort($optForms);
 
 $jsonOptForms="";
 $jsonPropEnd="";
-foreach($optForms as $data){
+$reflector = new ReflectionClass("jqGridPersistente");
+$fn = $reflector->getFileName();
+$u1= dirname($fn);
+$arrU=explode("/",$u1);
+
+
+
+
+$rutaActual=$arrU[sizeof($arrU)-1];
+$reloadGrid="";
+$userDB="";
+$passDB="";
+$hostDB="";
+$portDB="";
+//$grid=new jqGridPersistente(DB_Servidor,DB_USER,DB_PASSWORD,DB_Nombre,3306);//Si se editara en el grid
+
+$dataDBFinal='';
+
+if(!empty($this->arrUserDBInfo)){
+	$reloadGrid='$("#$divContenedora").load("$myurl");';
+	$dataDB=implode("|",$this->arrUserDBInfo);
+	$llave=date("Ym").md5("edgarCarrizales");
+	
+	$dataDBFinal=$this->encrypt($dataDB,$llave);
+	
+	
+	$finalCols="";
+	foreach($arr_Original_Cols as $colName=>$orname){
+		if($finalCols==""){
+			$finalCols=$colName.":".$orname;
+		}else{
+			$finalCols.=",".$colName.":".$orname;
+		}
+	}
+    
+    $compactar=gzdeflate($finalCols,9);
+	$codificar=base64_encode($compactar);
+	$finalColsDataFull=$this->encrypt($codificar,$llave);//encriptar
+}
+
+$primKey=$this->encrypt($this->mkey,$llave);
+$dbs=$this->encrypt($this->dbs,$llave);
+$functionAdd=<<<F
+
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.open( "POST", "$rutaActual/jqGridPHP.php", false ); // false for synchronous request
+	xmlHttp.setRequestHeader("Content-Type", "application/json");
+	xmlHttp.send(JSON.stringify({c:"$finalColsDataFull", 
+	                             codex:"$dataDBFinal",
+								 mt:'$dbs',
+								 mk:'$primKey',
+								 data:postdata,
+								 a:{action}
+								 }));
+  
+  
+	console.debug(xmlHttp.responseText);
+    return xmlHttp.responseText;
+
+
+					
+
+
+				
+				
+							
+F;
+
+$defaultFunctions=" $functionAdd}";
+$fullDefaultFunction="{beforeSubmit:function(postdata,form){ $functionAdd }}";
+$addFunction=false;
+
+ // print_r($optForms);
+foreach($optForms as $index=>$data){
 	$tmp="";
 
 	if($data != "{}"){
 		$tmp.="{";
+		
 		 foreach($data as $campo=>$valor){
 			 if(is_bool($valor)){
-			 if($valor==false){
-				 $valor='false';
-			 }else{
-				 $valor='true';
+				 if($valor==false){
+					 $valor='false';
+				 }else{
+					 $valor='true';
+				 }
 			 }
+			 if(!is_numeric($valor)){
+				 if(strpos($valor,"function")===false){
+				     
+					 $valor="'".$valor."'";
+				 }
 			 }
+			 
+			 if($campo=="beforeSubmit"){
+				
+			     $valor=$this->str_replace_first("}", $defaultFunctions, $valor); 
+				  $valor=str_replace("{action}", "'".$navOpDefault[$index]."'",$valor);
+			 }
+			 
 			if($tmp=="{"){
 				$tmp.="$campo : $valor";
 			}else{
 				$tmp.=",\r\n $campo : $valor";
 			}
 		  }
+		  
 		$tmp.="},";
 	}else{
-	  $tmp="{},";	
+	  $valor=str_replace("{action}", "'".$navOpDefault[$index]."'",$fullDefaultFunction);
+	 
+	  $tmp=$valor.",";
 	}
     $jsonPropEnd.=$tmp;
 }
@@ -706,13 +1024,38 @@ $jsonPropEnd=substr($jsonPropEnd,0,-1);
 $jsonOptForms.=$jsonPropEnd;
 $jsonOptForms.="";
 
+//Agregar los custom buttons
 
-//$jsonOptForms=json_encode($optForms
 
-//print_r($jsonOptForms);
-// print_r($jsonNavOpt);
+//Fin de botones en el navegador
+
+
+//Eventos
+$eventosGrid="";
+if(isset($this->navOptions['event'])){
+	foreach($this->navOptions['event'] as $nombre=>$funcion){
+       if(!in_array($nombre,$this->arrNoValidas)){
+		     $eventosGrid.="$nombre : $funcion,";
+	   }
+	}
+}
+//Eventos
+$jqEvent="";
+//jqEvent
+if(isset($this->navOptions['jqEvent'])){
+	foreach($this->navOptions['jqEvent'] as $nombre=>$funcion){
+       if(!in_array($nombre,$this->arrNoValidas)){
+		$jqEvent.="mygrid.bind('jqGridFilterSearch',$funcion);\r\n";
+	   }
+	}
+}
+//jqEvent
+
 $initjs=<<<INITJS
 <script>
+window.mensaje="error";
+window.estado=false;
+window.control=false;
 $(document).ready(function(){
 	
 	$jsGridData
@@ -738,6 +1081,7 @@ $(document).ready(function(){
                 search: $search,
                 postData: $postData,
                 sortname: $sortname,
+				$eventosGrid
                 sortorder: $sortorder $subGridAdd
 				
             };
@@ -882,7 +1226,6 @@ $(document).ready(function(){
 									}
 								});
 						break;
-						case "search": break;
 						case "refresh":
 			
 							mygrid.jqGrid("navButtonAdd", {
@@ -907,12 +1250,13 @@ $(document).ready(function(){
 			mygrid.bind("jqGridToolbarBeforeSearch", function (e, rowid, orgClickEvent){
 			      $("#$divContenedora").load("$myurl");
 			});
+
 			
 			mygrid.bind("jqGridFilterSearch", function (e, rowid, orgClickEvent){
 			      $("#$divContenedora").load("$myurl");
 			});
 			//Eventos de Usuario
-
+              $jqEvent
 			
 			
 //Funciones de Usuario 			  
