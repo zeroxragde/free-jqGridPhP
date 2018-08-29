@@ -24,8 +24,10 @@ class jqGridPersistente{
     private $arrModificadores=array("rowNum","page",'search','postData','sortname','sortorder');
 	private $dbs="";
 	private $arrUserDBInfo=array();
+	private $llave="";
 	
     function __construct() {
+
 		$a=array();
         $a = func_get_args();
         $i = func_num_args();
@@ -50,7 +52,7 @@ class jqGridPersistente{
 	private function __construct5($c){
 
 		$this->arrUserDBInfo=$c;
-		  $this->conn=new mysqli($c[0],$c[1],$c[2],$c[3],$c[4]);
+		$this->conn=new mysqli($c[0],$c[1],$c[2],$c[3],$c[4]);
 	}
 
 	
@@ -168,7 +170,7 @@ class jqGridPersistente{
 	 public function encrypt($cadena,$key){
 		
 
-		$llave=$this->generarLlave($key);
+		$this->llave=$this->generarLlave($key);
 
 
 
@@ -193,14 +195,14 @@ class jqGridPersistente{
 
 		if($initIndex!=$indexKey){
 
-			$arr_bytes[$initIndex]=$arr_bytes[$initIndex]+$llave;
-			$arr_bytes[$lastIndex]=$arr_bytes[$lastIndex]+$llave;
-			$arr_bytes[$indexKey]=$arr_bytes[$indexKey]+$llave;
+			$arr_bytes[$initIndex]=$arr_bytes[$initIndex]+$this->llave;
+			$arr_bytes[$lastIndex]=$arr_bytes[$lastIndex]+$this->llave;
+			$arr_bytes[$indexKey]=$arr_bytes[$indexKey]+$this->llave;
 
 		}else{
 
-			$arr_bytes[$initIndex]=$arr_bytes[$initIndex]+$llave;
-			$arr_bytes[$lastIndex]=$arr_bytes[$lastIndex]+$llave;
+			$arr_bytes[$initIndex]=$arr_bytes[$initIndex]+$this->llave;
+			$arr_bytes[$lastIndex]=$arr_bytes[$lastIndex]+$this->llave;
 			
 
 		}
@@ -214,7 +216,7 @@ class jqGridPersistente{
 	public function decrypt($cadena,$key){
 			
 		$cadena=base64_decode($cadena);
-		$llave=$this->generarLlave($key);
+		$this->llave=$this->generarLlave($key);
 
 
 
@@ -239,14 +241,14 @@ class jqGridPersistente{
 
 		if($initIndex!=$indexKey){
 
-			$arr_bytes[$initIndex]=$arr_bytes[$initIndex]-$llave;
-			$arr_bytes[$lastIndex]=$arr_bytes[$lastIndex]-$llave;
-			$arr_bytes[$indexKey]=$arr_bytes[$indexKey]-$llave;
+			$arr_bytes[$initIndex]=$arr_bytes[$initIndex]-$this->llave;
+			$arr_bytes[$lastIndex]=$arr_bytes[$lastIndex]-$this->llave;
+			$arr_bytes[$indexKey]=$arr_bytes[$indexKey]-$this->llave;
 
 		}else{
 
-			$arr_bytes[$initIndex]=$arr_bytes[$initIndex]-$llave;
-			$arr_bytes[$lastIndex]=$arr_bytes[$lastIndex]-$llave;
+			$arr_bytes[$initIndex]=$arr_bytes[$initIndex]-$this->llave;
+			$arr_bytes[$lastIndex]=$arr_bytes[$lastIndex]-$this->llave;
 			
 
 		}
@@ -337,6 +339,8 @@ class jqGridPersistente{
 	
 public function renderGrid($mygridName,$pagerName, $divContenedora){
 	
+$this->llave=date("Ym").md5("edgarCarrizales");
+		
 if(!$this->conn){
 	$this->error='Se debe asignar una conexion en el contructor<br/>';	$this->showError();return false;
 }	
@@ -921,13 +925,13 @@ $portDB="";
 //$grid=new jqGridPersistente(DB_Servidor,DB_USER,DB_PASSWORD,DB_Nombre,3306);//Si se editara en el grid
 
 $dataDBFinal='';
-
+$finalColsDataFull="";
 if(!empty($this->arrUserDBInfo)){
 	$reloadGrid='$("#$divContenedora").load("$myurl");';
 	$dataDB=implode("|",$this->arrUserDBInfo);
-	$llave=date("Ym").md5("edgarCarrizales");
+
 	
-	$dataDBFinal=$this->encrypt($dataDB,$llave);
+	$dataDBFinal=$this->encrypt($dataDB,$this->llave);
 	
 	
 	$finalCols="";
@@ -941,11 +945,11 @@ if(!empty($this->arrUserDBInfo)){
     
     $compactar=gzdeflate($finalCols,9);
 	$codificar=base64_encode($compactar);
-	$finalColsDataFull=$this->encrypt($codificar,$llave);//encriptar
+	$finalColsDataFull=$this->encrypt($codificar,$this->llave);//encriptar
 }
 
-$primKey=$this->encrypt($this->mkey,$llave);
-$dbs=$this->encrypt($this->dbs,$llave);
+$primKey=$this->encrypt($this->mkey,$this->llave);
+$dbs=$this->encrypt($this->dbs,$this->llave);
 $functionAdd=<<<F
 
     var xmlHttp = new XMLHttpRequest();
@@ -961,14 +965,11 @@ $functionAdd=<<<F
   
   
 	console.debug(xmlHttp.responseText);
-    return xmlHttp.responseText;
-
-
-					
-
-
-				
-				
+	
+	var respuesta=JSON.parse(xmlHttp.responseText);
+    
+	return [respuesta.estado,respuesta.msg];
+	
 							
 F;
 

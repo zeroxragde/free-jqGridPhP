@@ -4,9 +4,7 @@ ini_set("display_errors", 1);
 include("class.jqGrid.php");
 include("class.better_mysqli.php");
 
- //$eControl= $_SESSION["CONN"];//se crea el objeto de conexionunset
- //unset($_SESSION["CONN"]);
-//$_SESSION["CONN"]->query("SET NAMES utf8"); 
+
 
 $jqCryp=new jqGridPersistente();
 
@@ -42,8 +40,6 @@ $ConfigDB=explode("|",$jqCryp->decrypt($codex,$llave));
 $dbs=$jqCryp->decrypt($dbs,$llave);
 $primaryKey=$jqCryp->decrypt($primaryKey,$llave);
 
-
-if($action!="del"){
 	//obtener columnas
 	$desEncriptar=$jqCryp->decrypt($cols,$llave);
 	$desCodificar=base64_decode($desEncriptar);
@@ -55,18 +51,30 @@ if($action!="del"){
 		$colInArr=explode(":",$col);
 		$arrFinalCols[$colInArr[0]]=$colInArr[1];
 	}
-
-
+if($action!="del"){
 	//DATOS A GUARDAR
 	$dataArr = json_decode(json_encode($data),true);
 }
 
-// $mysqli = new better_mysqli('your_server', 'your_user', 'your_pass', 'your_db_name');
+
 $eControl= new better_mysqli($ConfigDB[0],$ConfigDB[1],$ConfigDB[2],$ConfigDB[3],$ConfigDB[4]);//se crea el objeto de conexion
 $eControl->query("SET NAMES utf8"); 
 
 
 //Actions
+if($action=="del"){
+  $myprimkey=$arrFinalCols[$primaryKey];
+  $sqlDelete="DELETE FROM $dbs WHERE $myprimkey=?";	
+  $params=array($data);
+  if($eControl->delete($sqlDelete, $params)){
+	$arr_["estado"]=true;	
+	$arr_["msg"]="Registro eliminado correctamente";
+  }else{
+	  $arr_["msg"]="Error al intentar borrar el registro";
+  }
+	
+	
+}
 if($action=="edit"){
 
 $sqlUpdate="UPDATE $dbs SET ";
@@ -100,22 +108,57 @@ $sqlUpdate.=$sqlCampos." WHERE $myprimkey = ?";//'$idFinal'
 
 
 
-$eControl->update($sqlUpdate, $sqlValores);	
+if($eControl->update($sqlUpdate, $sqlValores)){
+	$arr_["estado"]=true;	
+	$arr_["msg"]="Registro actualizado correctamente";
+}else{
+	$arr_["msg"]="Error al actualizar el registro.";
+}
 	
 	
 	
 }
 if($action=="add"){
 	
-	$arr_["estado"]=false;
-	$arr_["msg"]="Error...";
+$sqlInsert="INSERT INTO $dbs (";
+
+$sqlCampos="";
+$sqlValores=array();
+$signos="";
+ foreach($dataArr as $userCol=>$newVal){
+   if($userCol!="grid_id"){
+		if($sqlCampos==""){
+			$sqlCampos=$arrFinalCols[$userCol];
+			$sqlValores[]=$newVal;
+			$signos="?";
+		}else{
+			$sqlCampos.=",".$arrFinalCols[$userCol];
+			$sqlValores[]=$newVal;
+			$signos=",?";
+		}
+   }
+ }
 	
+$sqlInsert.=$sqlCampos;
+$sqlInsert.=") VALUES (";
+$sqlInsert.=$signos;
+$sqlInsert.=")";
 	
+
+if($eControl->insert($sqlInsert, $sqlValores,$debug_level=0, $verbose_output, $id_of_new_record)){
+	$arr_["estado"]=true;	
+	$arr_["msg"]="Registro agregado correctamente";
+}else{
+	$arr_["msg"]="Error al intentar agregar el registro";
+}	
 	
+$arr_["id"]=$id_of_new_record;
 	
 }
-echo json_encode($arr_);
 
+
+
+echo json_encode($arr_);
 
 
 
