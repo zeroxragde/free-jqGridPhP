@@ -1126,7 +1126,7 @@ if(isset($this->navOptions['jqEvent'])){
 //jqEvent
 
 //botones
-$botones=array();
+$botones="''";
 if(!empty($this->userButtons)){
 	$botones=json_encode($this->userButtons);
 	$cantidadBotones=sizeOf($this->userButtons)-1;
