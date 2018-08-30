@@ -42,8 +42,11 @@ $primaryKey=$jqCryp->decrypt($primaryKey,$llave);
 
 	//obtener columnas
 	$desEncriptar=$jqCryp->decrypt($cols,$llave);
+	
 	$desCodificar=base64_decode($desEncriptar);
+	
 	$deCompactar=gzinflate($desCodificar);
+	
 	$getCols=$deCompactar;
 	$arrCols=explode(",",$getCols);
 	$arrFinalCols=array();

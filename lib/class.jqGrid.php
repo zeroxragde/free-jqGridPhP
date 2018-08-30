@@ -25,6 +25,7 @@ class jqGridPersistente{
 	private $dbs="";
 	private $arrUserDBInfo=array();
 	private $llave="";
+	private $userButtons=array();
 	
     function __construct() {
 
@@ -167,10 +168,10 @@ class jqGridPersistente{
 	
 	
 		
-	 public function encrypt($cadena,$key){
+	public function encrypt($cadena,$key){
 		
 
-		$this->llave=$this->generarLlave($key);
+		$llave=$this->generarLlave($key);
 
 
 
@@ -195,14 +196,14 @@ class jqGridPersistente{
 
 		if($initIndex!=$indexKey){
 
-			$arr_bytes[$initIndex]=$arr_bytes[$initIndex]+$this->llave;
-			$arr_bytes[$lastIndex]=$arr_bytes[$lastIndex]+$this->llave;
-			$arr_bytes[$indexKey]=$arr_bytes[$indexKey]+$this->llave;
+			$arr_bytes[$initIndex]=$arr_bytes[$initIndex]+$llave;
+			$arr_bytes[$lastIndex]=$arr_bytes[$lastIndex]+$llave;
+			$arr_bytes[$indexKey]=$arr_bytes[$indexKey]+$llave;
 
 		}else{
 
-			$arr_bytes[$initIndex]=$arr_bytes[$initIndex]+$this->llave;
-			$arr_bytes[$lastIndex]=$arr_bytes[$lastIndex]+$this->llave;
+			$arr_bytes[$initIndex]=$arr_bytes[$initIndex]+$llave;
+			$arr_bytes[$lastIndex]=$arr_bytes[$lastIndex]+$llave;
 			
 
 		}
@@ -211,12 +212,11 @@ class jqGridPersistente{
 			
 		
 	}
- 
-	 
+
 	public function decrypt($cadena,$key){
 			
 		$cadena=base64_decode($cadena);
-		$this->llave=$this->generarLlave($key);
+		$llave=$this->generarLlave($key);
 
 
 
@@ -241,14 +241,14 @@ class jqGridPersistente{
 
 		if($initIndex!=$indexKey){
 
-			$arr_bytes[$initIndex]=$arr_bytes[$initIndex]-$this->llave;
-			$arr_bytes[$lastIndex]=$arr_bytes[$lastIndex]-$this->llave;
-			$arr_bytes[$indexKey]=$arr_bytes[$indexKey]-$this->llave;
+			$arr_bytes[$initIndex]=$arr_bytes[$initIndex]-$llave;
+			$arr_bytes[$lastIndex]=$arr_bytes[$lastIndex]-$llave;
+			$arr_bytes[$indexKey]=$arr_bytes[$indexKey]-$llave;
 
 		}else{
 
-			$arr_bytes[$initIndex]=$arr_bytes[$initIndex]-$this->llave;
-			$arr_bytes[$lastIndex]=$arr_bytes[$lastIndex]-$this->llave;
+			$arr_bytes[$initIndex]=$arr_bytes[$initIndex]-$llave;
+			$arr_bytes[$lastIndex]=$arr_bytes[$lastIndex]-$llave;
 			
 
 		}
@@ -335,6 +335,12 @@ class jqGridPersistente{
 	public function setDBs($d){
 		$this->dbs=$d;
 	}
+	public function setButton($b){
+		
+		$this->userButtons[]=$b;
+		
+	}
+	
 
 	
 public function renderGrid($mygridName,$pagerName, $divContenedora){
@@ -349,14 +355,14 @@ if($this->mkey==""){
 }
 	
 if($this->dbs==""){
-	$this->error='Se debe especificar una o varias bases de datos a afectar $obj->setDBs("base1,base2...")<br/>';	$this->showError();return false;
+	$this->error='Se debe especificar una bases de datos a afectar $obj->setDBs("base")<br/>';	$this->showError();return false;
 }
 $arrColNames=array();
 if(empty($this->conn)){
 	$this->error='Se debe especificar una consulta $obj->setData("consulta")<br/>';	$this->showError();return false;
 }else{
 		$result=mysqli_query($this->conn,$this->query);
-		if($result){
+		if($result){ 
 				$info_tabla=$result->fetch_fields();
 				$x=0;
 				//print_r($info_tabla);
@@ -922,7 +928,7 @@ $userDB="";
 $passDB="";
 $hostDB="";
 $portDB="";
-//$grid=new jqGridPersistente(DB_Servidor,DB_USER,DB_PASSWORD,DB_Nombre,3306);//Si se editara en el grid
+
 
 $dataDBFinal='';
 $finalColsDataFull="";
@@ -942,10 +948,12 @@ if(!empty($this->arrUserDBInfo)){
 			$finalCols.=",".$colName.":".$orname;
 		}
 	}
-    
+
     $compactar=gzdeflate($finalCols,9);
 	$codificar=base64_encode($compactar);
 	$finalColsDataFull=$this->encrypt($codificar,$this->llave);//encriptar
+	
+
 }
 
 $primKey=$this->encrypt($this->mkey,$this->llave);
@@ -964,26 +972,69 @@ $functionAdd=<<<F
 								 }));
   
   
-	console.debug(xmlHttp.responseText);
+	
 	
 	var respuesta=JSON.parse(xmlHttp.responseText);
     
+	  $("#$divContenedora").load("$myurl");
+	
 	return [respuesta.estado,respuesta.msg];
 	
 							
 F;
 
 $defaultFunctions=" $functionAdd}";
-$fullDefaultFunction="{beforeSubmit:function(postdata,form){ $functionAdd }}";
-$addFunction=false;
+$fullDefaultFunction="beforeSubmit:function(postdata,form){ $functionAdd }";
 
- // print_r($optForms);
+$functionAddForm=<<<fa
+
+var selCols=$selctores;
+
+
+		 
+$.each(selCols,function(i,v){
+	
+var valActual=$("#"+i,formid).val();
+var prop='role="select"'+
+         'separator=":"'+
+		 'delimiter=";"'+
+		 'id="'+i+'"'+
+		 'name="'+i+'"'+
+		 'size="1"'+
+		 'class="FormElement"';
+
+var opt="";
+$.each(v,function(i,v){
+
+	if(i!="textAll"){
+		if(v==valActual){
+			opt+='<option selected role="option" value="'+i+'">'+v+'</option>';
+		}else{
+			opt+='<option role="option" value="'+i+'">'+v+'</option>';
+		}		
+	}
+
+	
+});	 
+	$("#"+i,formid).replaceWith("<select "+prop+">"+opt+"</select>");
+
+	
+});
+
+fa;
+$defaultFunctionsForm=" $functionAddForm}";
+$fullDefaultFunctionForm="beforeShowForm:function(formid){ $functionAddForm }";
+
 foreach($optForms as $index=>$data){
 	$tmp="";
 
 	if($data != "{}"){
+		  // print_r($data);
 		$tmp.="{";
-		
+		$p=0;
+		$campoSubmit=false;
+		$campoShowForm=false;
+		$cantidadOp=sizeOf($data)-1;
 		 foreach($data as $campo=>$valor){
 			 if(is_bool($valor)){
 				 if($valor==false){
@@ -998,23 +1049,45 @@ foreach($optForms as $index=>$data){
 					 $valor="'".$valor."'";
 				 }
 			 }
-			 
+			 //Agregamos codigo a las funciones que el user especifico
 			 if($campo=="beforeSubmit"){
-				
-			     $valor=$this->str_replace_first("}", $defaultFunctions, $valor); 
-				  $valor=str_replace("{action}", "'".$navOpDefault[$index]."'",$valor);
+				  $campoSubmit=true;
+			      $valor=$this->str_replace_first("}", $defaultFunctions, $valor); 
+				  $valor="\r\n ".str_replace("{action}", "'".$navOpDefault[$index]."'",$valor);
 			 }
+			 
+			 if($campo=="beforeShowForm"){
+				  $campoShowForm=true;
+			      $valor=$this->str_replace_first("}", $defaultFunctionsForm, $valor); 
+			 }
+			 
+
 			 
 			if($tmp=="{"){
 				$tmp.="$campo : $valor";
 			}else{
 				$tmp.=",\r\n $campo : $valor";
 			}
+			//Agregamos el campo por si el user no lo especifica
+			 if($p==$cantidadOp){
+			  if(!$campoSubmit){
+				  $campoSubmit=true;
+				  $tmp.=",\r\n ".str_replace("{action}", "'".$navOpDefault[$index]."'",$fullDefaultFunction);
+				  
+			  }
+			  if(!$campoShowForm){
+				  $campoSubmit=true;
+				  $tmp.=",\r\n ".$fullDefaultFunctionForm;
+				  
+			  }
+			 }else{$p++;}
+
+			
 		  }
 		  
 		$tmp.="},";
 	}else{
-	  $valor=str_replace("{action}", "'".$navOpDefault[$index]."'",$fullDefaultFunction);
+	  $valor=str_replace("{action}", "'".$navOpDefault[$index]."'","\r\n {".$fullDefaultFunction.",\r\n".$fullDefaultFunctionForm."}");
 	 
 	  $tmp=$valor.",";
 	}
@@ -1046,11 +1119,50 @@ $jqEvent="";
 if(isset($this->navOptions['jqEvent'])){
 	foreach($this->navOptions['jqEvent'] as $nombre=>$funcion){
        if(!in_array($nombre,$this->arrNoValidas)){
-		$jqEvent.="mygrid.bind('jqGridFilterSearch',$funcion);\r\n";
+		$jqEvent.="mygrid.bind('$nombre',$funcion);\r\n";
 	   }
 	}
 }
 //jqEvent
+
+//botones
+$botones=array();
+if(!empty($this->userButtons)){
+	$botones=json_encode($this->userButtons);
+	$cantidadBotones=sizeOf($this->userButtons)-1;
+	$initBoton="[";
+	foreach($this->userButtons as $index=>$boton){
+		$initBoton.="{";
+		$tmp="";
+		foreach($boton as $config=>$val){
+			if(strpos($val,"function")===false){
+				$val="'".$val."'";
+			}
+			if($tmp==""){
+				$tmp.=$config.":".$val;
+			}else{
+				$tmp.=", \r\n ".$config.":".$val;
+			}
+			
+		}
+		
+		$initBoton.=$tmp;
+		
+		if($cantidadBotones==$index){
+			$initBoton.="}";
+		}else{
+			$initBoton.="},";
+		}
+		
+		
+		
+	}
+	
+	$initBoton.="]";
+	
+	$botones=$initBoton;
+}
+
 
 $initjs=<<<INITJS
 <script>
@@ -1263,6 +1375,19 @@ $(document).ready(function(){
 //Funciones de Usuario 			  
 			 $jsAddGrid 
 //Fin de Funciones de Usuario			 
+	
+//Botones de usuario
+
+var botones=$botones;
+
+
+$.each(botones,function(i,v){
+	
+		mygrid.jqGrid("navButtonAdd", v);
+			
+});
+//Fin de botones de usuario	
+	
 	
 });//Fin del Ready
 </script>
